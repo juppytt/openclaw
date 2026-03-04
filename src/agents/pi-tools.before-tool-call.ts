@@ -15,7 +15,10 @@ export type HookContext = {
   loopDetection?: ToolLoopDetectionConfig;
 };
 
-type HookOutcome = { blocked: true; reason: string } | { blocked: false; params: unknown };
+type HookOutcome =
+  | { blocked: true; reason: string }
+  | { blocked: false; params: unknown; injectedResult?: undefined }
+  | { blocked: false; params: unknown; injectedResult: unknown };
 
 const log = createSubsystemLogger("agents/tools");
 const BEFORE_TOOL_CALL_WRAPPED = Symbol("beforeToolCallWrapped");
@@ -179,6 +182,14 @@ export async function runBeforeToolCallHook(args: {
       };
     }
 
+    if (hookResult?.result !== undefined) {
+      const mergedParams =
+        hookResult.params && isPlainObject(hookResult.params) && isPlainObject(params)
+          ? { ...params, ...hookResult.params }
+          : params;
+      return { blocked: false, params: mergedParams, injectedResult: hookResult.result };
+    }
+
     if (hookResult?.params && isPlainObject(hookResult.params)) {
       if (isPlainObject(params)) {
         return { blocked: false, params: { ...params, ...hookResult.params } };
@@ -213,6 +224,9 @@ export function wrapToolWithBeforeToolCallHook(
       });
       if (outcome.blocked) {
         throw new Error(outcome.reason);
+      }
+      if (!outcome.blocked && outcome.injectedResult !== undefined) {
+        return outcome.injectedResult;
       }
       if (toolCallId) {
         const adjustedParamsKey = buildAdjustedParamsKey({ runId: ctx?.runId, toolCallId });

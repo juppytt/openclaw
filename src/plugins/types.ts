@@ -511,6 +511,8 @@ export type PluginHookBeforeToolCallResult = {
   params?: Record<string, unknown>;
   block?: boolean;
   blockReason?: string;
+  /** If set, skip actual tool execution and return this as the tool result. */
+  result?: unknown;
 };
 
 // after_tool_call hook
