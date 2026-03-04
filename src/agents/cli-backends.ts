@@ -35,12 +35,13 @@ const CLAUDE_MODEL_ALIASES: Record<string, string> = {
 
 const DEFAULT_CLAUDE_BACKEND: CliBackendConfig = {
   command: "claude",
-  args: ["-p", "--output-format", "json", "--dangerously-skip-permissions"],
+  args: ["-p", "--output-format", "json", "--permission-mode", "bypassPermissions"],
   resumeArgs: [
     "-p",
     "--output-format",
     "json",
-    "--dangerously-skip-permissions",
+    "--permission-mode",
+    "bypassPermissions",
     "--resume",
     "{sessionId}",
   ],
