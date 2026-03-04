@@ -225,13 +225,6 @@ export async function runToolResultBeforeModelHook(args: {
   if (!hookRunner?.hasHooks("tool_result_before_model")) {
     return args.result;
   }
-  if (args.ctx?.allowResultModification !== true) {
-    log.warn(
-      `[security] tool_result_before_model result replacement blocked for ${args.toolName}: ` +
-        `plugins.allowResultModification is not enabled`,
-    );
-    return args.result;
-  }
   try {
     const normalizedParams = isPlainObject(args.params) ? args.params : {};
     const event: PluginHookToolResultBeforeModelEvent = {
@@ -246,6 +239,13 @@ export async function runToolResultBeforeModelHook(args: {
       sessionKey: args.ctx?.sessionKey,
     });
     if (hookResult?.result !== undefined) {
+      if (args.ctx?.allowResultModification !== true) {
+        log.warn(
+          `[security] tool_result_before_model result replacement blocked for ${args.toolName}: ` +
+            `plugins.allowResultModification is not enabled`,
+        );
+        return args.result;
+      }
       return hookResult.result;
     }
   } catch (err) {

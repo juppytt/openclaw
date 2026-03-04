@@ -1,3 +1,5 @@
+import type { InstallRecordBase } from "./types.installs.js";
+
 export type PluginEntryConfig = {
   enabled?: boolean;
   config?: Record<string, unknown>;
@@ -34,4 +36,3 @@ export type PluginsConfig = {
    */
   allowResultModification?: boolean;
 };
-import type { InstallRecordBase } from "./types.installs.js";

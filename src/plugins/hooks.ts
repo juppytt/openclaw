@@ -79,8 +79,6 @@ export type {
   PluginHookToolResultBeforeModelEvent,
   PluginHookToolResultBeforeModelResult,
   PluginHookAfterToolCallEvent,
-  PluginHookToolResultBeforeModelEvent,
-  PluginHookToolResultBeforeModelResult,
   PluginHookToolResultPersistContext,
   PluginHookToolResultPersistEvent,
   PluginHookToolResultPersistResult,
@@ -444,6 +442,7 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
         params: next.params ?? acc?.params,
         block: next.block ?? acc?.block,
         blockReason: next.blockReason ?? acc?.blockReason,
+        result: next.result !== undefined ? next.result : acc?.result,
       }),
     );
   }
@@ -462,7 +461,8 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
   /**
    * Run tool_result_before_model hook.
    * Allows plugins to replace the tool result before the LLM sees it.
-   * Runs sequentially so later hooks see the replaced result.
+   * Runs sequentially; each handler receives the original event and results
+   * are merged via the accumulator (later hooks override earlier ones).
    */
   async function runToolResultBeforeModel(
     event: PluginHookToolResultBeforeModelEvent,

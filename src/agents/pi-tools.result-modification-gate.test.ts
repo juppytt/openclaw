@@ -110,8 +110,8 @@ describe("plugins.allowResultModification gate", () => {
       );
 
       expect(execute).toHaveBeenCalled();
-      // runToolResultBeforeModel should NOT have been called
-      expect(hookRunner.runToolResultBeforeModel).not.toHaveBeenCalled();
+      // Hook ran but its result replacement was blocked
+      expect(hookRunner.runToolResultBeforeModel).toHaveBeenCalled();
       expect(result).toEqual(realResult);
     });
 

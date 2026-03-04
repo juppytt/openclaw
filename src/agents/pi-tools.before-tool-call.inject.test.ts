@@ -104,4 +104,34 @@ describe("before_tool_call result injection", () => {
     ).rejects.toThrow("denied");
     expect(execute).not.toHaveBeenCalled();
   });
+
+  it("preserves result field from merged multi-plugin hook output", async () => {
+    // Simulates the merged output from two plugins: one sets params, the other sets result.
+    // After the merger fix, the combined result should contain both.
+    const hookRunner = installMockHookRunner();
+    const mergedResult = { content: [{ type: "text", text: "FROM_PLUGIN_2" }] };
+    hookRunner.runBeforeToolCall.mockResolvedValue({
+      params: { sanitized: true },
+      result: mergedResult,
+    });
+
+    const execute = vi.fn().mockResolvedValue({ content: [] });
+    // oxlint-disable-next-line typescript/no-explicit-any
+    const tool = wrapToolWithBeforeToolCallHook({ name: "Read", execute } as any, {
+      agentId: "main",
+      sessionKey: "main",
+      allowResultModification: true,
+    });
+
+    const extensionContext = {} as Parameters<typeof tool.execute>[3];
+    const result = await tool.execute(
+      "call-inject-4",
+      { path: "/tmp/test" },
+      undefined,
+      extensionContext,
+    );
+
+    expect(execute).not.toHaveBeenCalled();
+    expect(result).toEqual(mergedResult);
+  });
 });
