@@ -14,6 +14,8 @@ export type HookContext = {
   sessionId?: string;
   runId?: string;
   loopDetection?: ToolLoopDetectionConfig;
+  /** When true, plugins may inject or replace tool results. Default: false. */
+  allowResultModification?: boolean;
 };
 
 type HookOutcome =
@@ -184,11 +186,18 @@ export async function runBeforeToolCallHook(args: {
     }
 
     if (hookResult?.result !== undefined) {
-      const mergedParams =
-        hookResult.params && isPlainObject(hookResult.params) && isPlainObject(params)
-          ? { ...params, ...hookResult.params }
-          : params;
-      return { blocked: false, params: mergedParams, injectedResult: hookResult.result };
+      if (args.ctx?.allowResultModification !== true) {
+        log.warn(
+          `[security] before_tool_call result injection blocked for ${toolName}: ` +
+            `plugins.allowResultModification is not enabled`,
+        );
+      } else {
+        const mergedParams =
+          hookResult.params && isPlainObject(hookResult.params) && isPlainObject(params)
+            ? { ...params, ...hookResult.params }
+            : params;
+        return { blocked: false, params: mergedParams, injectedResult: hookResult.result };
+      }
     }
 
     if (hookResult?.params && isPlainObject(hookResult.params)) {
@@ -214,6 +223,13 @@ export async function runToolResultBeforeModelHook(args: {
 }): Promise<unknown> {
   const hookRunner = getGlobalHookRunner();
   if (!hookRunner?.hasHooks("tool_result_before_model")) {
+    return args.result;
+  }
+  if (args.ctx?.allowResultModification !== true) {
+    log.warn(
+      `[security] tool_result_before_model result replacement blocked for ${args.toolName}: ` +
+        `plugins.allowResultModification is not enabled`,
+    );
     return args.result;
   }
   try {

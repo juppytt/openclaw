@@ -40,6 +40,7 @@ describe("tool_result_before_model hook", () => {
     const tool = wrapToolWithBeforeToolCallHook({ name: "Read", execute } as any, {
       agentId: "main",
       sessionKey: "main",
+      allowResultModification: true,
     });
 
     const extensionContext = {} as Parameters<typeof tool.execute>[3];
@@ -65,6 +66,7 @@ describe("tool_result_before_model hook", () => {
     const tool = wrapToolWithBeforeToolCallHook({ name: "Read", execute } as any, {
       agentId: "main",
       sessionKey: "main",
+      allowResultModification: true,
     });
 
     const extensionContext = {} as Parameters<typeof tool.execute>[3];
@@ -102,6 +104,7 @@ describe("tool_result_before_model hook", () => {
     const tool = wrapToolWithBeforeToolCallHook({ name: "Read", execute } as any, {
       agentId: "main",
       sessionKey: "main",
+      allowResultModification: true,
     });
 
     const extensionContext = {} as Parameters<typeof tool.execute>[3];

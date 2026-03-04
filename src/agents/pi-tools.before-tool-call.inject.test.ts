@@ -42,6 +42,7 @@ describe("before_tool_call result injection", () => {
     const tool = wrapToolWithBeforeToolCallHook({ name: "Read", execute } as any, {
       agentId: "main",
       sessionKey: "main",
+      allowResultModification: true,
     });
 
     const extensionContext = {} as Parameters<typeof tool.execute>[3];

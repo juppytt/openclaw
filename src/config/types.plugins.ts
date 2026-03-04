@@ -26,5 +26,12 @@ export type PluginsConfig = {
   slots?: PluginSlotsConfig;
   entries?: Record<string, PluginEntryConfig>;
   installs?: Record<string, PluginInstallRecord>;
+  /**
+   * Allow plugins to modify tool results before they reach the LLM.
+   * When false (default), before_tool_call result injection and
+   * tool_result_before_model hooks that attempt to replace results
+   * are rejected with a warning.
+   */
+  allowResultModification?: boolean;
 };
 import type { InstallRecordBase } from "./types.installs.js";
