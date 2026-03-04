@@ -236,8 +236,11 @@ export async function runToolResultBeforeModelHook(args: {
     };
     const hookResult = await hookRunner.runToolResultBeforeModel(event, {
       toolName: normalizeToolName(args.toolName),
+      toolCallId: args.toolCallId,
       agentId: args.ctx?.agentId,
       sessionKey: args.ctx?.sessionKey,
+      sessionId: args.ctx?.sessionId,
+      runId: args.ctx?.runId,
     });
     if (hookResult?.result !== undefined) {
       if (args.ctx?.allowResultModification !== true) {
@@ -277,6 +280,10 @@ export function wrapToolWithBeforeToolCallHook(
         throw new Error(outcome.reason);
       }
       if (!outcome.blocked && outcome.injectedResult !== undefined) {
+        if (toolCallId) {
+          const adjustedParamsKey = buildAdjustedParamsKey({ runId: ctx?.runId, toolCallId });
+          adjustedParamsByToolCallId.set(adjustedParamsKey, outcome.params);
+        }
         return runToolResultBeforeModelHook({
           toolName,
           toolCallId,
