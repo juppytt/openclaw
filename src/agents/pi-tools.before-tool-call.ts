@@ -2,6 +2,7 @@ import type { ToolLoopDetectionConfig } from "../config/types.tools.js";
 import type { SessionState } from "../logging/diagnostic-session-state.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { getGlobalHookRunner } from "../plugins/hook-runner-global.js";
+import type { PluginHookToolResultBeforeModelEvent } from "../plugins/types.js";
 import { isPlainObject } from "../utils.js";
 import { normalizeToolName } from "./tool-policy.js";
 import type { AnyAgentTool } from "./tools/common.js";
@@ -204,6 +205,39 @@ export async function runBeforeToolCallHook(args: {
   return { blocked: false, params };
 }
 
+export async function runToolResultBeforeModelHook(args: {
+  toolName: string;
+  toolCallId?: string;
+  params: unknown;
+  result: unknown;
+  ctx?: HookContext;
+}): Promise<unknown> {
+  const hookRunner = getGlobalHookRunner();
+  if (!hookRunner?.hasHooks("tool_result_before_model")) {
+    return args.result;
+  }
+  try {
+    const normalizedParams = isPlainObject(args.params) ? args.params : {};
+    const event: PluginHookToolResultBeforeModelEvent = {
+      toolName: normalizeToolName(args.toolName),
+      toolCallId: args.toolCallId,
+      params: normalizedParams,
+      result: args.result,
+    };
+    const hookResult = await hookRunner.runToolResultBeforeModel(event, {
+      toolName: normalizeToolName(args.toolName),
+      agentId: args.ctx?.agentId,
+      sessionKey: args.ctx?.sessionKey,
+    });
+    if (hookResult?.result !== undefined) {
+      return hookResult.result;
+    }
+  } catch (err) {
+    log.warn(`tool_result_before_model hook failed: tool=${args.toolName} error=${String(err)}`);
+  }
+  return args.result;
+}
+
 export function wrapToolWithBeforeToolCallHook(
   tool: AnyAgentTool,
   ctx?: HookContext,
@@ -226,7 +260,13 @@ export function wrapToolWithBeforeToolCallHook(
         throw new Error(outcome.reason);
       }
       if (!outcome.blocked && outcome.injectedResult !== undefined) {
-        return outcome.injectedResult;
+        return runToolResultBeforeModelHook({
+          toolName,
+          toolCallId,
+          params: outcome.params,
+          result: outcome.injectedResult,
+          ctx,
+        });
       }
       if (toolCallId) {
         const adjustedParamsKey = buildAdjustedParamsKey({ runId: ctx?.runId, toolCallId });
@@ -248,7 +288,13 @@ export function wrapToolWithBeforeToolCallHook(
           toolCallId,
           result,
         });
-        return result;
+        return runToolResultBeforeModelHook({
+          toolName,
+          toolCallId,
+          params: outcome.params,
+          result,
+          ctx,
+        });
       } catch (err) {
         await recordLoopOutcome({
           ctx,

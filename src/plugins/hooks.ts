@@ -23,6 +23,8 @@ import type {
   PluginHookBeforeResetEvent,
   PluginHookBeforeToolCallEvent,
   PluginHookBeforeToolCallResult,
+  PluginHookToolResultBeforeModelEvent,
+  PluginHookToolResultBeforeModelResult,
   PluginHookGatewayContext,
   PluginHookGatewayStartEvent,
   PluginHookGatewayStopEvent,
@@ -74,7 +76,11 @@ export type {
   PluginHookToolContext,
   PluginHookBeforeToolCallEvent,
   PluginHookBeforeToolCallResult,
+  PluginHookToolResultBeforeModelEvent,
+  PluginHookToolResultBeforeModelResult,
   PluginHookAfterToolCallEvent,
+  PluginHookToolResultBeforeModelEvent,
+  PluginHookToolResultBeforeModelResult,
   PluginHookToolResultPersistContext,
   PluginHookToolResultPersistEvent,
   PluginHookToolResultPersistResult,
@@ -454,6 +460,25 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
   }
 
   /**
+   * Run tool_result_before_model hook.
+   * Allows plugins to replace the tool result before the LLM sees it.
+   * Runs sequentially so later hooks see the replaced result.
+   */
+  async function runToolResultBeforeModel(
+    event: PluginHookToolResultBeforeModelEvent,
+    ctx: PluginHookToolContext,
+  ): Promise<PluginHookToolResultBeforeModelResult | undefined> {
+    return runModifyingHook<"tool_result_before_model", PluginHookToolResultBeforeModelResult>(
+      "tool_result_before_model",
+      event,
+      ctx,
+      (acc, next) => ({
+        result: next.result !== undefined ? next.result : acc?.result,
+      }),
+    );
+  }
+
+  /**
    * Run tool_result_persist hook.
    *
    * This hook is intentionally synchronous: it runs in hot paths where session
@@ -731,6 +756,7 @@ export function createHookRunner(registry: PluginRegistry, options: HookRunnerOp
     // Tool hooks
     runBeforeToolCall,
     runAfterToolCall,
+    runToolResultBeforeModel,
     runToolResultPersist,
     // Message write hooks
     runBeforeMessageWrite,
