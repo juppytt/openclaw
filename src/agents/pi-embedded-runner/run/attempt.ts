@@ -1815,6 +1815,7 @@ export async function runEmbeddedAttempt(
               sessionId: params.sessionId,
               runId: params.runId,
               loopDetection: clientToolLoopDetection,
+              allowResultModification: params.config?.plugins?.allowResultModification,
             },
           )
         : [];
